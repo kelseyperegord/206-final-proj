@@ -4,8 +4,8 @@ import re
 import os
 import sqlite3
 
-
 def getDataFromCOVID():
+    uniq_key = []
     lst_of_date = []
     lst_of_new_cases = []
     lst_of_new_deaths = []
@@ -17,18 +17,20 @@ def getDataFromCOVID():
     info = json.loads(data.text)
     reversed_lst = list(reversed(info['actualsTimeseries']))
     i = 102
-    curr_initiated_vax = reversed_lst[101]['vaccinationsInitiated']
-    curr_completed_vax = reversed_lst[101]['vaccinationsCompleted']
-
+    curr_initiated_vax = reversed_lst[103]['vaccinationsInitiated']
+    curr_completed_vax = reversed_lst[103]['vaccinationsCompleted']
+    x = 1
     while i >= 3:
         if reversed_lst[i]['vaccinationsInitiated'] == None:
             vax_init_per_day = 0
             vax_complete_per_day = 0
         else:
-            vax_init_per_day = int(curr_initiated_vax) - int(reversed_lst[i]['vaccinationsInitiated'])
-            vax_complete_per_day = int(curr_completed_vax) - int(reversed_lst[i]['vaccinationsCompleted'])
+            vax_init_per_day = int(reversed_lst[i]['vaccinationsInitiated']) - int(curr_initiated_vax)
+            vax_complete_per_day = int(reversed_lst[i]['vaccinationsCompleted']) - int(curr_completed_vax)
             curr_initiated_vax = reversed_lst[i]['vaccinationsInitiated']
+            #print(curr_initiated_vax)
             curr_completed_vax = reversed_lst[i]['vaccinationsCompleted']
+            #print(curr_completed_vax)
         
         if reversed_lst[i]['newCases'] == None:
             new_cases = 0
@@ -40,101 +42,45 @@ def getDataFromCOVID():
         split_date = date.split("-")
         new_date = int("".join(split_date))
 
+        uniq_key.append(x)
         lst_of_date.append(new_date)
         lst_of_new_cases.append(new_cases)
         lst_of_new_deaths.append(new_deaths)
         lst_of_init.append(vax_init_per_day)
         lst_of_complete.append(vax_complete_per_day)
+        x += 1
         i -= 1
-    return lst_of_date, lst_of_new_cases, lst_of_new_deaths, lst_of_init, lst_of_complete
-            
-            
-        # curr_lst = []
-        # for day in info['metricsTimeseries']:
-        #     regex = r'\d{4}\-\d{2}\-15'
-        #     if day['date'] == '2021-04-15':
-        #         break
-        #     if_true = re.findall(regex, day['date'])
-        #     if len(if_true) > 0:
-        #         curr_day = if_true[0]
-        #         curr_mon = if_true[0][6]
-        #         curr_testPositive = day['testPositivityRatio']
-        #         curr_caseDens = day['caseDensity']
-        #         tup = (airport_codes[i], curr_day, curr_mon, curr_testPositive, curr_caseDens)
-        #         curr_lst.append(tup)
-        # lst_of_lsts.append(curr_lst)
-    #return lst_of_lsts
-    pass
+    return uniq_key, lst_of_date, lst_of_new_cases, lst_of_new_deaths, lst_of_init, lst_of_complete
 
-def getDataFromHoliday():
-    years = ['2020','2021']
-    holidays = {}
-    for year in years:
-        if year == '2020':
-            for month in range(3,13):
-                base_url = 'https://holidays.abstractapi.com/v1/?api_key={}country=US&year=2020&month={}'
-                new_url = base_url.format('d8bb9016fdd749ebb81a779a4f9a93ba', month)
-                data = requests.get(new_url)
-                info = json.loads(data.text)
-                count = 0
-                curr_lst = []
-                for holiday in info:
-                    return holiday
-                    if holiday['type'] == 'Observance':
-                        count += 1
-                        curr_date = holiday['date']
-                        curr_lst.append(curr_date)
-                new_lst = []
-                new_lst.append(count)
-                new_lst.append(curr_lst)
-                holidays[month] = new_lst
-        if year == '2021':
-            for month in range(1,3):
-                base_url = 'https://holidays.abstractapi.com/v1/?api_key={}country=US&year=2021&month={}'
-                new_url = base_url.format('d8bb9016fdd749ebb81a779a4f9a93ba', month)
-                data = requests.get(new_url)
-                info = json.loads(data.text)
-                count = 0
-                curr_lst = []
-                for holiday in info:
-                    if holiday['type'] == 'Observance':
-                        count += 1
-                        curr_date = holiday['date']
-                        curr_lst.append(curr_date)
-                new_lst = []
-                new_lst.append(count)
-                new_lst.append(curr_lst)
-                holidays[month] = new_lst
-    return holidays
+# kelsey can you look at this plssss
+def calculateQuarterAvg():
+    lst_of_quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    uniqs, date, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
+    dct = {}
+    i = 0
+    print(len(uniqs))
+    for quarter in lst_of_quarters:
+        for i in range(len(uniqs)):
+            if quarter not in dct:
+                dct[quarter] = []
+            if (i + 1) % 25 == 0:
+                break
+            curr_date = date[i]
+            curr_cases = new_cases[i]
+            curr_deaths = new_deaths[i]
+            init_vax = vax_init[i]
+            complete_vax = vax_complete[i]
+            tup = (curr_date, curr_cases, curr_deaths, init_vax, complete_vax)
+            dct[quarter].append(tup)
+            i += 1
+    return dct
 
-    #     new_url = base_url.format('bb6334af-eaa6-4707-846e-3224f9a0d460', year)
-    #     base_url = 'https://holidayapi.com/v1/holidays?pretty&key={}&country=US&year={}'
-    #     new_url = base_url.format('bb6334af-eaa6-4707-846e-3224f9a0d460', year)
-    #     data = requests.get(new_url)
-    #     info = json.loads(data.text)
-    #     for holiday in info['holidays']:
-    #         if year == '2020':
-    #             regex_str = r'\d{4}\-\b(?:0[3-9]|1[0-2])\b\-\d{2}'
-    #             if_true = re.findall(regex_str, holiday['date'])
-    #             if len(if_true) > 0:
-    #                 if holiday['public'] == True:
-    #                     curr_date = holiday['date']
-    #                     curr_name = holiday['name']
-    #                     curr_month = holiday['date'][6:8]
-    #                     tup = (curr_month, curr_date, curr_name)
-    #                     holidays.append(tup)
-    #         elif year == '2021':
-    #             regex_str = r'\d{4}\-\d{2}-\d{2}'
-    #             if_true = re.findall(regex_str, holiday['date'])
-    #             print(if_true)
-    #             if len(if_true) > 0:
-    #                 if holiday['public'] == True:
-    #                     curr_date = holiday['date']
-    #                     curr_name = holiday['name']
-    #                     curr_month = holiday['date'][6:8]
-    #                     tup = (curr_month, curr_date, curr_name)
-    #                     holidays.append(tup)
-    return holidays
+new_dct = calculateQuarterAvg()
+new_lst = []
+for key in new_dct:
+    for tup in new_dct[key]:
+        new_lst.append(tup)
+print(len(new_lst))
 
 def setUpDb(f_name):
     path = os.path.dirname(os.path.abspath(__file__))
@@ -144,20 +90,28 @@ def setUpDb(f_name):
     return cur, conn
 
 def createDb1(cur, conn, startIndex):
-    date, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
+    uniqs, date, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
+    print(startIndex)
     for item in range(startIndex, startIndex + 25):
-        cur.execute("INSERT INTO covidData (date, new_cases, new_deaths, vax_init, vax_complete) VALUES (?, ?, ?, ?, ?)", (date[item], new_cases[item], new_deaths[item], vax_init[item], vax_complete[item]))
+        cur.execute("INSERT INTO covidData (uniq, date, new_cases, new_deaths, vax_init, vax_complete) VALUES (?, ?, ?, ?, ?, ?)", (uniqs[item], date[item], new_cases[item], new_deaths[item], vax_init[item], vax_complete[item]))
     conn.commit()
 
-def createDb2(cur, conn):
-    pass
-
-
 def main():
-    pass
-    #getDataFromAPI()
+    # getDataFromCOVID()
     cur, conn = setUpDb('covid.db')
-    cur.execute('CREATE TABLE IF NOT EXISTS covidData (date INTEGER UNIQUE, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER')
+    cur.execute('CREATE TABLE IF NOT EXISTS covidData (uniq INTEGER UNIQUE, date INTEGER, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER)')
+    # cur.execute('CREATE TABLE IF NOT EXISTS covidData (date INTEGER UNIQUE, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER)')
+    cur.execute('SELECT max (uniq) from covidData')
+    startIndex = cur.fetchone()[0]
+    print(startIndex)
+    if startIndex == None:
+        startIndex = 0
+    createDb1(cur, conn, startIndex)
+
+# main()
+
+
+
 
     
 
