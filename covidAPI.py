@@ -6,13 +6,12 @@ import sqlite3
 
 
 def getDataFromCOVID():
-    # Los Angeles, San Diego, San Jose
-    # Chicago, Detroit, Minneapolis
-    # New York City, Philadelphia, Charlotte
-    # city information, for that city, at that month what the total amount of cases
+    lst_of_date = []
+    lst_of_new_cases = []
+    lst_of_new_deaths = []
+    lst_of_init = []
+    lst_of_complete = []
 
-    lst_of_lsts = []
-    
     base_url = 'https://api.covidactnow.org/v2/country/US.timeseries.json?apiKey=058ae95db40f49de9aa59c9c3b5ca56e'
     data = requests.get(base_url)
     info = json.loads(data.text)
@@ -40,10 +39,14 @@ def getDataFromCOVID():
         date = reversed_lst[i]['date']
         split_date = date.split("-")
         new_date = int("".join(split_date))
-        tup = (new_date, new_cases, new_deaths, vax_init_per_day, vax_complete_per_day)
-        lst_of_lsts.append(tup)
+
+        lst_of_date.append(new_date)
+        lst_of_new_cases.append(new_cases)
+        lst_of_new_deaths.append(new_deaths)
+        lst_of_init.append(vax_init_per_day)
+        lst_of_complete.append(vax_complete_per_day)
         i -= 1
-    return lst_of_lsts
+    return lst_of_date, lst_of_new_cases, lst_of_new_deaths, lst_of_init, lst_of_complete
             
             
         # curr_lst = []
@@ -62,10 +65,6 @@ def getDataFromCOVID():
         # lst_of_lsts.append(curr_lst)
     #return lst_of_lsts
     pass
-
-data = getDataFromCOVID()
-print(len(data))
-print(data[0])
 
 def getDataFromHoliday():
     years = ['2020','2021']
@@ -137,9 +136,6 @@ def getDataFromHoliday():
     #                     holidays.append(tup)
     return holidays
 
-        
-
-
 def setUpDb(f_name):
     path = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(path+'/'+f_name)
@@ -147,14 +143,21 @@ def setUpDb(f_name):
     pass
     return cur, conn
 
-def createDb(curr, conn, startIndex):
+def createDb1(cur, conn, startIndex):
+    date, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
+    for item in range(startIndex, startIndex + 25):
+        cur.execute("INSERT INTO covidData (date, new_cases, new_deaths, vax_init, vax_complete) VALUES (?, ?, ?, ?, ?)", (date[item], new_cases[item], new_deaths[item], vax_init[item], vax_complete[item]))
+    conn.commit()
+
+def createDb2(cur, conn):
     pass
+
 
 def main():
     pass
     #getDataFromAPI()
     cur, conn = setUpDb('covid.db')
-    cur.execute('CREATE TABLE IF NOT EXISTS ')
+    cur.execute('CREATE TABLE IF NOT EXISTS covidData (date INTEGER UNIQUE, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER')
 
     
 
