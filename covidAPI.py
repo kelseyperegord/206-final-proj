@@ -131,6 +131,9 @@ def createDb1(cur, conn, startIndex):
         cur.execute("INSERT INTO covidData (uniq, date, new_cases, new_deaths, vax_init, vax_complete) VALUES (?, ?, ?, ?, ?, ?)", (uniqs[item], date[item], new_cases[item], new_deaths[item], vax_init[item], vax_complete[item]))
     conn.commit()
 
+def calculationStock():
+    cur.execute("SELECT ")
+
 def main():
     # getDataFromCOVID()
     cur, conn = setUpDb('covid.db')
