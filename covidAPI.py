@@ -16,6 +16,7 @@ def getDataFromCOVID():
     data = requests.get(base_url)
     info = json.loads(data.text)
     reversed_lst = list(reversed(info['actualsTimeseries']))
+    print(reversed_lst)
     i = 102
     curr_initiated_vax = reversed_lst[103]['vaccinationsInitiated']
     curr_completed_vax = reversed_lst[103]['vaccinationsCompleted']
@@ -54,33 +55,67 @@ def getDataFromCOVID():
 
 # kelsey can you look at this plssss
 def calculateQuarterAvg():
-    lst_of_quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-    uniqs, date, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
-    dct = {}
-    i = 0
-    print(len(uniqs))
-    for quarter in lst_of_quarters:
-        for i in range(len(uniqs)):
-            if quarter not in dct:
-                dct[quarter] = []
-            if (i + 1) % 25 == 0:
-                break
-            curr_date = date[i]
+    uniqs, dates, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
+    lst_of_lsts = []
+    curr_lst = []
+    for i in range(len(uniqs)):
+        if (i + 1) % 25 == 0:
+            curr_date = dates[i]
             curr_cases = new_cases[i]
             curr_deaths = new_deaths[i]
             init_vax = vax_init[i]
             complete_vax = vax_complete[i]
-            tup = (curr_date, curr_cases, curr_deaths, init_vax, complete_vax)
-            dct[quarter].append(tup)
-            i += 1
-    return dct
+            tup = (curr_cases, curr_deaths, init_vax, complete_vax)
+            curr_lst.append(tup)
+            lst_of_lsts.append(curr_lst)
+            curr_lst = []
+            continue
+        curr_date = dates[i]
+        curr_cases = new_cases[i]
+        curr_deaths = new_deaths[i]
+        init_vax = vax_init[i]
+        complete_vax = vax_complete[i]
+        tup = (curr_cases, curr_deaths, init_vax, complete_vax)
+        curr_lst.append(tup)
+    avgs = {}
+    for x in range(len(lst_of_lsts)):
+        avgs[x] = []
+        counter = 0
+        tot_cases = 0
+        tot_deaths = 0
+        tot_init_vax = 0
+        tot_complete_vax = 0
+        for tup in lst_of_lsts[x]:
+            counter += 1
+            tot_cases += tup[0]
+            tot_deaths += tup[1]
+            tot_init_vax += tup[2]
+            tot_complete_vax += tup[3]
+        avgs[x].append(tot_cases/counter)
+        avgs[x].append(tot_deaths/counter)
+        avgs[x].append(tot_init_vax/counter)
+        avgs[x].append(tot_complete_vax/counter)
+    return avgs
 
-new_dct = calculateQuarterAvg()
-new_lst = []
-for key in new_dct:
-    for tup in new_dct[key]:
-        new_lst.append(tup)
-print(len(new_lst))
+def calculationsFile():
+    path = os.path.dirname(os.path.abspath(__file__))
+    dct = calculateQuarterAvg()
+    quarters = ['25', '50', '75', '100']
+    with open (path+'/'+'calculations.txt', 'w') as f:
+        f.write('quarter, average new cases per day, average new deaths per day, average # of people initiating their vaccines per day, average # of people completing their vaccines per day')
+        f.write('\n')
+        for key in dct:
+            new_str = []
+            new_str.append(quarters[key])
+            for item in dct[key]:
+                new_str.append(str(item))
+            f_string = ",".join(new_str)
+            f.write(f_string)
+            f.write('\n')
+
+calculationsFile()
+
+
 
 def setUpDb(f_name):
     path = os.path.dirname(os.path.abspath(__file__))
@@ -108,8 +143,7 @@ def main():
         startIndex = 0
     createDb1(cur, conn, startIndex)
 
-# main()
-
+main()
 
 
 
