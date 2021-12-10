@@ -136,15 +136,10 @@ def visualizationJoint(cur, conn):
         days.append(i)
     
     segment_PFE = PFE[:30]
-    print(segment_PFE)
     segment_MRNA = MRNA[:30]
-    print(segment_MRNA)
     segment_cases = lst_cases[:30]
     segment_days = days[:30]
 
-    print(len(segment_PFE))
-    print(len(segment_MRNA))
-    print(len(segment_cases))
     plt.plot(segment_days, segment_PFE, label = "PFE stock", linestyle=":", color='#FF94E1')
     plt.plot(segment_days, segment_MRNA, label = "MRNA stock", linestyle=":", color='#6a0dad')
     plt.plot(segment_days, segment_cases, label = "New COVID cases", linestyle="-", color='#007E42')
@@ -152,7 +147,42 @@ def visualizationJoint(cur, conn):
     plt.xlabel("Days")
     plt.ylabel("Units")
     plt.title('New COVID-19 Cases (per 5000 Americans) vs Daily Stock Averages for the past 30 days')
-    plt.show() 
+    plt.show()
+
+def visualizationRatio(cur, conn):
+    # Stocks: id, name
+    # covidData: uniq, date, new_cases, new_deaths, vax_init, vax_complete
+    # StocksInfo: uniq, date, stock_id, high, low, volume
+    cur.execute("SELECT StocksInfo.stock_id, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
+    data = cur.fetchall()
+    PFE = []
+    MRNA = []
+    days = []
+    for i in range(len(data)):
+        print(data[i])
+        #cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (data[i][0], ))
+        high = data[i][1]
+        cases = (data[i][3])
+        if data[i][0] == 0:
+            ratio = high/cases
+            PFE.append(ratio)
+        if data[i][0] == 1:
+            ratio = high/cases
+            MRNA.append(ratio)
+        days.append(i)
+    
+    segment_PFE = PFE[:30]
+    segment_MRNA = MRNA[:30]
+    segment_days = days[:30]
+
+    plt.plot(segment_days, segment_PFE, label = "PFE stock", linestyle="-", color='#FF94E1')
+    plt.plot(segment_days, segment_MRNA, label = "MRNA stock", linestyle="-", color='#007E42')
+    
+    plt.legend()
+    plt.xlabel("Days")
+    plt.ylabel("Units")
+    plt.title('New COVID-19 Cases (per 5000 Americans) vs Daily Stock Averages for the past 30 days')
+    plt.show()  
 
 def setUpDb(f_name):
     path = os.path.dirname(os.path.abspath(__file__))
@@ -189,7 +219,7 @@ def main():
     cur.execute('CREATE TABLE IF NOT EXISTS covidData (uniq INTEGER UNIQUE, date INTEGER, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER)')
     cur.execute('SELECT max (uniq) from covidData')
     CalcStocktoCase(cur, conn, 'calculations.txt')
-    visualizationJoint(cur, conn)
+    visualizationRatio(cur, conn)
     startIndex = cur.fetchone()[0]
     print(startIndex)
     if startIndex == None:
