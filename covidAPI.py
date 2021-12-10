@@ -134,10 +134,10 @@ def visualizationNaoko(cur, conn):
             lst_cases.append(cases)
             days.append(i)
     
-    segment_PFE = PFE[:15]
-    segment_MRNA = MRNA[:15]
-    segment_cases = lst_cases[:15]
-    segment_days = days[:15]
+    segment_PFE = PFE[:30]
+    segment_MRNA = MRNA[:30]
+    segment_cases = lst_cases[:30]
+    segment_days = days[:30]
 
     print(len(segment_PFE))
     print(len(segment_MRNA))
@@ -146,6 +146,9 @@ def visualizationNaoko(cur, conn):
     plt.plot(segment_days, segment_PFE, label = "MRNA stock", linestyle=":", color='#3FBE81')
     plt.plot(segment_days, segment_cases, label = "cases", linestyle="-", color='#007E42')
     plt.legend()
+    plt.xlabel("Days")
+    plt.ylabel("Cases per 100,000 people")
+    plt.title('COVID Cases vs Daily Stock Averages for the past 30 days')
     plt.show()
 
             
