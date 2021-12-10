@@ -126,44 +126,28 @@ def createDb1(cur, conn, startIndex):
         cur.execute("INSERT INTO covidData (uniq, date, new_cases, new_deaths, vax_init, vax_complete) VALUES (?, ?, ?, ?, ?, ?)", (uniqs[item], date[item], new_cases[item], new_deaths[item], vax_init[item], vax_complete[item]))
     conn.commit()
 
-# these two functions to be put in visualizations file?
-def pfizerCalculationStock(cur, conn):
+def CalcStocktoCase(cur, conn, f):
     path = os.path.dirname(os.path.abspath(__file__))
-    cur.execute("SELECT covidData.date, StocksInfo.high, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date AND StocksInfo.stock_id=?", (0, ))
+    cur.execute("SELECT StocksInfo.stock_id, covidData.date, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
     data = cur.fetchall()
-
-    with open (path+'/'+'calculations.txt', 'a') as f:
+    with open (path+'/'+'calculations.txt', 'w') as f:
         f.write('stockName, date, ???')
         f.write('\n')
         for tup in data:
-            date = tup[0]
-            stock_high = tup[1]
-            new_cases = tup[2]
-            stock_price_to_cases = stock_high/new_cases
-            f.write("Pfizer, " + str(date) + ", " + str(stock_price_to_cases))
-            f.write('\n')
-
-def modernaCalculationStock(cur, conn):
-    path = os.path.dirname(os.path.abspath(__file__))
-    cur.execute("SELECT covidData.date, StocksInfo.high, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date AND StocksInfo.stock_id=?", (1, ))
-    data = cur.fetchall()
-    
-    with open (path+'/'+'calculations.txt', 'a') as f:
-        f.write('stockName, date, ???')
-        f.write('\n')
-        for tup in data:
-            date = tup[0]
-            stock_high = tup[1]
-            new_cases = tup[2]
-            stock_price_to_cases = stock_high/new_cases
-            f.write("Moderna, " + str(date) + ", " + str(stock_price_to_cases))
+            cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (tup[0], ))
+            stock_name = cur.fetchall()[0]
+            date = tup[1]
+            # stock_dif = tup[2] - tup[3]
+            new_cases = tup[4]
+            stock_price_to_cases = tup[2]/new_cases
+            f.write(str(stock_name[0]) + ", " + str(date) + ", " + str(stock_price_to_cases))
             f.write('\n')
 
 def main():
     cur, conn = setUpDb('covid.db')
     cur.execute('CREATE TABLE IF NOT EXISTS covidData (uniq INTEGER UNIQUE, date INTEGER, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER)')
     cur.execute('SELECT max (uniq) from covidData')
-    pfizerCalculationStock(cur, conn)
+    CalcStocktoCase(cur, conn, 'calculations.txt')
     startIndex = cur.fetchone()[0]
     print(startIndex)
     if startIndex == None:
