@@ -1,6 +1,7 @@
 import requests
 import json
-import re
+import numpy as np
+import matplotlib.pyplot as plt
 import os
 import sqlite3
 
@@ -112,11 +113,47 @@ def getDataFromCOVID():
 #             f.write(f_string)
 #             f.write('\n')
 
+def visualizationNaoko(cur, conn):
+    # Stocks: id, name
+    # covidData: uniq, date, new_cases, new_deaths, vax_init, vax_complete
+    # StocksInfo: uniq, date, stock_id, high, low, volume
+    cur.execute("SELECT StocksInfo.stock_id, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
+    data = cur.fetchall()
+    PFE = []
+    MRNA = []
+    lst_cases = []
+    days = []
+    for i in range(len(data)):
+            #cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (data[i][0], ))
+            dif = data[i][1] - data[i][2]
+            cases = (data[i][3])/100000
+            if data[i][0] == 0:
+                PFE.append(dif)
+            if data[i][0] == 1:
+                MRNA.append(dif)
+            lst_cases.append(cases)
+            days.append(i)
+    
+    segment_PFE = PFE[:15]
+    segment_MRNA = MRNA[:15]
+    segment_cases = lst_cases[:15]
+    segment_days = days[:15]
+
+    print(len(segment_PFE))
+    print(len(segment_MRNA))
+    print(len(segment_cases))
+    plt.plot(segment_days, segment_PFE, label = "PFE stock", linestyle="--", color='#FF94E1')
+    plt.plot(segment_days, segment_PFE, label = "MRNA stock", linestyle=":", color='#3FBE81')
+    plt.plot(segment_days, segment_cases, label = "cases", linestyle="-", color='#007E42')
+    plt.legend()
+    plt.show()
+
+            
+
 def setUpDb(f_name):
     path = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(path+'/'+f_name)
     cur = conn.cursor()
-    pass
     return cur, conn
 
 def createDb1(cur, conn, startIndex):
@@ -148,6 +185,7 @@ def main():
     cur.execute('CREATE TABLE IF NOT EXISTS covidData (uniq INTEGER UNIQUE, date INTEGER, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER)')
     cur.execute('SELECT max (uniq) from covidData')
     CalcStocktoCase(cur, conn, 'calculations.txt')
+    visualizationNaoko(cur, conn)
     startIndex = cur.fetchone()[0]
     print(startIndex)
     if startIndex == None:
