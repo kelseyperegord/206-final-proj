@@ -1,6 +1,4 @@
 import sqlite3
-import requests
-import json
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,24 +16,44 @@ def main():
     ax1 = fig.add_subplot(132)
     cur.execute('SELECT date,high FROM StocksInfo where stock_id = ?', (0, ))
     
-    dates_list = []
+    days_ago_list = []
     high_list = []
     info = cur.fetchall()
 
+    i = 0
     for date in info:
-        dates_list.append(date[0])
+        days_ago_list.append(i)
         high_list.append(date[1])
+        i += 1
 
-    x = dates_list
+    x = days_ago_list
     y = high_list
-    ax1.plot(x, y)
+    ax1.plot(x, y, label='PFE stock', linestyle=':', color='blue')
+
+    cur.execute('SELECT date,high FROM StocksInfo where stock_id = ?', (1, ))
     
-    ax1.set(xlabel='Date', ylabel='Stock Price',
-       title='PFE High Price for Past 100 Days')
+    dates_list2 = []
+    high_list2 = []
+    info2 = cur.fetchall()
+
+    j = 0
+    for date in info2:
+        dates_list2.append(j)
+        high_list2.append(date[1])
+        j += 1
+
+    x2 = dates_list2
+    y2 = high_list2
+    ax1.plot(x2, y2, label='MRNA stock', color='purple')
+    
+    ax1.set(xlabel='Days Ago', ylabel='Stock Price',
+       title='PFE & MRNA High Price for Past 100 Days')
+    ax1.legend()
     ax1.grid()
 
 
     # Visualization 2
+    # Daily change in stock price by new COVID case (per 5000 Americans) for past 30 days
     ax2 = fig.add_subplot(131)
     cur.execute("SELECT StocksInfo.stock_id, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
     data = cur.fetchall()
@@ -45,7 +63,6 @@ def main():
     days = []
     for i in range(len(data)):
         print(data[i])
-        #cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (data[i][0], ))
         dif = data[i][1] - data[i][2]
         cases = (data[i][3])/5000
         if data[i][0] == 0:
@@ -64,11 +81,12 @@ def main():
     ax2.plot(segment_days, segment_MRNA, label = "MRNA stock", linestyle=":", color='#6a0dad')
     ax2.plot(segment_days, segment_cases, label = "New COVID cases", linestyle="-", color='#007E42')
     ax2.legend()
-    ax2.set(xlabel="Days", ylabel="Units", title=('\n'.join(wrap('''New COVID-19 Cases (per 5000 Americans) 
-                                                    vs Daily Stock Averages for the past 30 days''',60))))
+    ax2.set(xlabel="Days Ago", ylabel="Change in Stock Price", title=('\n'.join(wrap('''Daily Change in Stock Price
+                                                by new COVID Case (per 5000 Americans)''',60))))
 
 
     # Visualization 3
+    # Stock price:COVID cases (per 5000 Americans) for the past 30 days
     ax3 = fig.add_subplot(133)
     cur.execute("SELECT StocksInfo.stock_id, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
     data = cur.fetchall()
@@ -77,7 +95,6 @@ def main():
     days = []
     for i in range(len(data)):
         print(data[i])
-        #cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (data[i][0], ))
         high = data[i][1]
         cases = (data[i][3])
         if data[i][0] == 0:
@@ -96,8 +113,8 @@ def main():
     ax3.plot(segment_days, segment_MRNA, label = "MRNA stock", linestyle="-", color='#007E42')
     
     ax3.legend()
-    ax3.set(xlabel="Days",ylabel="Units",title=('\n'.join(wrap('''New COVID-19 Cases (per 5000 Americans) 
-                                            vs Daily Stock Averages for the past 30 days''', 60))))
+    ax3.set(xlabel="Days Ago",ylabel="Stock Price:Cases Ratio",title=('\n'.join(wrap('''Stock Price:COVID Cases (per 5000 Americans) 
+                                                                            for the past 30 days''', 60))))
 
     plt.show() 
 
