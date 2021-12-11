@@ -8,6 +8,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Query Alpha Vantage API to collect desired PFE and MRNA stock info for past 100 days
 def getStockInfo():
     stocks_list = ['PFE', 'MRNA']
     api_token = 'OE6TF62A0XRAYG2F'
@@ -39,6 +40,7 @@ def getStockInfo():
     return cleaned_stocks_list
 
 
+# Set up database
 def setUpDatabase(db_name):
     path = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(path+'/'+db_name)
@@ -57,18 +59,9 @@ def createStocksTable(cur,conn):
 
 
 # Create table that details daily info for each of the 2 stocks for past 100 days
-def setUpStocks(stocks_info, cur, conn):
-    cur.execute("CREATE TABLE IF NOT EXISTS StocksInfo (uniq NUMBER PRIMARY KEY, date NUMBER, stock_id NUMBER, high NUMBER, low NUMBER, volume NUMBER)")
+def setUpStocks(stocks_info, cur, conn, startIndex):
 
-    # Get current row in db
-    cur.execute('SELECT uniq FROM StocksInfo WHERE uniq  = (SELECT MAX(uniq) FROM StocksInfo)')
-    curr_row = cur.fetchone()
-    if (curr_row!=None):
-        curr_row = curr_row[0] + 1
-    else:
-        curr_row = 0
-
-    for x in stocks_info[curr_row:curr_row+25]:
+    for x in stocks_info[startIndex:startIndex + 25]:
         if x['stock'] == 'PFE':
             stock_id = 0
         else:
@@ -83,32 +76,25 @@ def setUpStocks(stocks_info, cur, conn):
     conn.commit()
 
 
-def createVisOne(cur, conn):
-    # Stocks: id, name
-    # covidData: uniq, date, new_cases, new_deaths, vax_init, vax_complete
-    # StocksInfo: uniq, date, stock_id, high, low, volume
-
-    # make a line chart for the PFE and MRNA prices over past 100 days
-    fig, ax = plt.subplots()
-    # x = 
-    # y = 
-    #ax.plot(x, y)
-    # cur.execute('SELECT high FROM StocksInfo where stock_id = ?', (, ))
-    ax.set(xlabel='Date', ylabel='Stock Price',
-       title='')
-    ax.grid()
-
-    plt.show()
-
-
-
 def main():
     cur, conn = setUpDatabase('covid.db')
 
+    # Create StocksInfo table in db
+    cur.execute("CREATE TABLE IF NOT EXISTS StocksInfo (uniq NUMBER PRIMARY KEY, date NUMBER, stock_id NUMBER, high NUMBER, low NUMBER, volume NUMBER)")
+    cur.execute('SELECT max (uniq) from StocksInfo')
+    
+    # Gather data from Alpha Vantage API
     cleaned_stocks_dict = getStockInfo()
     print(cleaned_stocks_dict)
 
-    setUpStocks(cleaned_stocks_dict, cur, conn)
+    # Get current row in db
+    startIndex = cur.fetchone()[0]
+    print(startIndex)
+    if startIndex == None:
+        startIndex = 0
+
+    # Set up both tables, which share a key
+    setUpStocks(cleaned_stocks_dict, cur, conn, startIndex)
     createStocksTable(cur, conn)
 
 
