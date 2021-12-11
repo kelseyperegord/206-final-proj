@@ -5,8 +5,7 @@ import sqlite3
 import requests
 import json
 import os
-import numpy as np
-import matplotlib.pyplot as plt
+
 
 # Query Alpha Vantage API to collect desired PFE and MRNA stock info for past 100 days
 def getStockInfo():
