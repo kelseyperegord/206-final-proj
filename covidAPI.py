@@ -1,10 +1,10 @@
 import requests
 import json
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import sqlite3
 
+
+# Query Covid Act Now API to obtain desired info
 def getDataFromCOVID():
     uniq_key = []
     lst_of_date = []
@@ -29,9 +29,7 @@ def getDataFromCOVID():
             vax_init_per_day = int(reversed_lst[i]['vaccinationsInitiated']) - int(curr_initiated_vax)
             vax_complete_per_day = int(reversed_lst[i]['vaccinationsCompleted']) - int(curr_completed_vax)
             curr_initiated_vax = reversed_lst[i]['vaccinationsInitiated']
-            #print(curr_initiated_vax)
             curr_completed_vax = reversed_lst[i]['vaccinationsCompleted']
-            #print(curr_completed_vax)
         
         if reversed_lst[i]['newCases'] == None:
             new_cases = 0
@@ -53,7 +51,7 @@ def getDataFromCOVID():
         i -= 1
     return uniq_key, lst_of_date, lst_of_new_cases, lst_of_new_deaths, lst_of_init, lst_of_complete
 
-# IRRELEVANT BUT KEEP FOR CODE LATER
+
 # def calculateQuarterAvg():
 #     uniqs, dates, new_cases, new_deaths, vax_init, vax_complete = getDataFromCOVID()
 #     lst_of_lsts = []
@@ -132,7 +130,7 @@ def CalcStocktoCase(cur, conn, f):
     cur.execute("SELECT StocksInfo.stock_id, covidData.date, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
     data = cur.fetchall()
     with open (path+'/'+'calculations.txt', 'w') as f:
-        f.write('stockName, date, ???')
+        f.write('stockName, date, High price per new COVID case')
         f.write('\n')
         for tup in data:
             cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (tup[0], ))
@@ -148,12 +146,13 @@ def main():
     cur, conn = setUpDb('covid.db')
     cur.execute('CREATE TABLE IF NOT EXISTS covidData (uniq INTEGER UNIQUE, date INTEGER, new_cases INTEGER, new_deaths INTEGER, vax_init INTEGER, vax_complete INTEGER)')
     cur.execute('SELECT max (uniq) from covidData')
-    #CalcStocktoCase(cur, conn, 'calculations.txt')
     startIndex = cur.fetchone()[0]
     print(startIndex)
     if startIndex == None:
         startIndex = 0
     createDb1(cur, conn, startIndex)
+
+    CalcStocktoCase(cur, conn, 'calculations.txt')
     
 
 if __name__ == "__main__":
