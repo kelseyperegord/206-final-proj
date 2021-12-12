@@ -66,22 +66,6 @@ def createDb1(cur, conn, startIndex):
         cur.execute("INSERT INTO covidData (uniq, date, new_cases, new_deaths, vax_init, vax_complete) VALUES (?, ?, ?, ?, ?, ?)", (uniqs[item], date[item], new_cases[item], new_deaths[item], vax_init[item], vax_complete[item]))
     conn.commit()
 
-def CalcStocktoCase(cur, conn, f):
-    path = os.path.dirname(os.path.abspath(__file__))
-    cur.execute("SELECT StocksInfo.stock_id, covidData.date, StocksInfo.high, StocksInfo.low, covidData.new_cases FROM StocksInfo JOIN covidData ON StocksInfo.date=covidData.date")
-    data = cur.fetchall()
-    with open (path+'/'+'calculations.txt', 'w') as f:
-        f.write('stockName, date, High price per new COVID case')
-        f.write('\n')
-        for tup in data:
-            cur.execute("SELECT Stocks.name FROM Stocks WHERE Stocks.id=?", (tup[0], ))
-            stock_name = cur.fetchall()[0]
-            date = tup[1]
-            # stock_dif = tup[2] - tup[3]
-            new_cases = tup[4]
-            stock_price_to_cases = tup[2]/new_cases
-            f.write(str(stock_name[0]) + ", " + str(date) + ", " + str(stock_price_to_cases))
-            f.write('\n')
 
 def main():
     cur, conn = setUpDb('covid.db')
@@ -95,16 +79,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-    
-
-
-
-
-    
-
-    
-
-    
